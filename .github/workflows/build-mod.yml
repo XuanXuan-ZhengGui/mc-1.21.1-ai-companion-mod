@@ -6,6 +6,7 @@ on:
       - main
     paths-ignore:
       - BUILD_FAILURE_LOG.md
+      - "dist/**"
     tags:
       - "v*"
   workflow_dispatch:
@@ -33,25 +34,21 @@ jobs:
           gradle-version: 8.10.2
 
       - name: Build
-        id: build
-        shell: bash
-        run: |
-          set +e
-          gradle build --stacktrace --warning-mode all 2>&1 | tee build-output.log
-          status=${PIPESTATUS[0]}
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit "$status"
+        run: gradle build
 
-      - name: Commit failure log
-        if: failure() && steps.build.outputs.status != '0'
+      - name: Commit built mod jar
+        if: github.ref == 'refs/heads/main'
         shell: bash
         run: |
-          cp build-output.log BUILD_FAILURE_LOG.md
+          mkdir -p dist
+          find build/libs -maxdepth 1 -type f -name "ai-companion-*.jar" ! -name "*-sources.jar" -exec cp {} dist/ \;
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add BUILD_FAILURE_LOG.md
-          git commit -m "chore: capture build failure log"
-          git push
+          git add dist/*.jar
+          if ! git diff --cached --quiet; then
+            git commit -m "build: publish compiled mod jar"
+            git push
+          fi
 
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
