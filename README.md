@@ -26,3 +26,9 @@ gradle build
 ## 说明
 
 当前版本已实现客户端 UI、配置保存、地图显示、本地 `ollama` / `llama.cpp` HTTP 调用入口和聊天拦截。云端 API 已预留输入与路由位置，不同云端服务商的请求格式需要在 `AiRouter.cloudReply` 中按实际协议补充。
+
+## 发布
+
+- 当前版本：`v0.1.0`
+- 发布说明：见 `RELEASE_NOTES_v0.1.0.md`
+- 更新日志：见 `CHANGELOG.md`
