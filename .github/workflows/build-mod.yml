@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - BUILD_FAILURE_LOG.md
     tags:
       - "v*"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -28,7 +33,25 @@ jobs:
           gradle-version: 8.10.2
 
       - name: Build
-        run: gradle build
+        id: build
+        shell: bash
+        run: |
+          set +e
+          gradle build --stacktrace --warning-mode all 2>&1 | tee build-output.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Commit failure log
+        if: failure() && steps.build.outputs.status != '0'
+        shell: bash
+        run: |
+          cp build-output.log BUILD_FAILURE_LOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add BUILD_FAILURE_LOG.md
+          git commit -m "chore: capture build failure log"
+          git push
 
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
