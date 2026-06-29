@@ -1,5 +1,13 @@
 # 更新日志
 
+## v0.2.1 - 2026-06-29
+
+### 修复
+
+- 修复进入世界时 `openToLan` 触发空指针崩溃的问题，增加 `client.player != null` 检查和 2 秒延迟。
+- 修复 `ClientWorld.addEntity(int, Entity)` 在 1.21.1 中不存在导致的编译失败，改为单参数 `addEntity(Entity)`。
+- 为实体管理增加全面的 `try-catch` 保护，防止客户端 tick 崩溃。
+
 ## v0.2.0 - 2026-06-29
 
 ### 新增
