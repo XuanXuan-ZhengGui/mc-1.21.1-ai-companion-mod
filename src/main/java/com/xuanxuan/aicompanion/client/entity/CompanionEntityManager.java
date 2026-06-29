@@ -22,6 +22,7 @@ public final class CompanionEntityManager {
     private static UUID skinUuid = UUID.randomUUID();
     private static int tickCounter;
     private static int spawnDelayTicks;
+    private static int deathCooldownTicks;
     private static final Random RANDOM = new Random();
     private static boolean isThinking = false;
 
@@ -33,6 +34,12 @@ public final class CompanionEntityManager {
             if (client.world == null || client.player == null || !AiCompanionConfig.joinedGame()) {
                 remove(client);
                 spawnDelayTicks = 0;
+                deathCooldownTicks = 0;
+                return;
+            }
+
+            if (deathCooldownTicks > 0) {
+                deathCooldownTicks--;
                 return;
             }
 
@@ -47,6 +54,7 @@ public final class CompanionEntityManager {
 
             tickCounter++;
             updateSurvival(client);
+            updateDamage(client);
 
             if (tickCounter % 5 == 0) {
                 updateMovement(client);
@@ -63,6 +71,7 @@ public final class CompanionEntityManager {
         skinUuid = UUID.randomUUID();
         remove(client);
         spawnDelayTicks = 0;
+        deathCooldownTicks = 0;
     }
 
     public static void remove(MinecraftClient client) {
@@ -127,8 +136,6 @@ public final class CompanionEntityManager {
 
             GameProfile profile = new GameProfile(skinUuid, COMPANION_NAME);
             companion = new OtherClientPlayerEntity(client.world, profile);
-            companion.setCustomName(Text.literal(COMPANION_NAME));
-            companion.setCustomNameVisible(true);
             Vec3d spawnPos = companionPosition(client, 2.0D);
             companion.refreshPositionAndAngles(spawnPos.x, spawnPos.y, spawnPos.z, client.player.getYaw(), 0.0F);
             client.world.addEntity(companion);
@@ -142,13 +149,31 @@ public final class CompanionEntityManager {
     private static void updateSurvival(MinecraftClient client) {
         if (companion == null || client.player == null) return;
         try {
-            if (companion.getHealth() < 20.0f) {
-                companion.setHealth(20.0f);
-            }
-            companion.fallDistance = 0.0f;
             companion.setAir(companion.getMaxAir());
         } catch (Exception ignored) {
         }
+    }
+
+    private static void updateDamage(MinecraftClient client) {
+        if (companion == null || companion.getHealth() <= 0) return;
+        try {
+            if (companion.fallDistance > 3.0f) {
+                float damage = (companion.fallDistance - 3.0f) * 0.5f;
+                companion.setHealth(Math.max(0, companion.getHealth() - damage));
+                companion.fallDistance = 0.0f;
+            }
+
+            if (companion.getHealth() <= 0) {
+                onDeath(client);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void onDeath(MinecraftClient client) {
+        AiCompanionClient.addChatMessage(Text.literal("[" + COMPANION_NAME + "] 已死亡，3秒后重生..."));
+        remove(client);
+        deathCooldownTicks = 60;
     }
 
     private static void updateMovement(MinecraftClient client) {
