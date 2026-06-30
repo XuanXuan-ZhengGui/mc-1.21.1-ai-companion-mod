@@ -33,7 +33,7 @@ public final class AiPerception {
         sb.append("朝向: Yaw=").append(String.format("%.0f", player.getYaw())).append(", Pitch=").append(String.format("%.0f", player.getPitch())).append("\n");
         sb.append("在地面上: ").append(player.isOnGround()).append("\n");
 
-        List<Entity> nearby = world.getEntities(player, player.getBoundingBox().expand(16.0));
+        java.util.List<Entity> nearby = world.getEntitiesByClass(Entity.class, player.getBoundingBox().expand(16.0), e -> e != player);
         int hostileCount = 0;
         int playerCount = 0;
         int passiveCount = 0;

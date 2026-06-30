@@ -50,7 +50,7 @@ public final class AiBotConnectScreen extends Screen {
         try {
             ServerAddress serverAddress = ServerAddress.parse(address);
             ServerInfo serverInfo = new ServerInfo("AI Target", address, ServerInfo.ServerType.OTHER);
-            ConnectScreen.connect(this, client, serverAddress, serverInfo, false);
+            ConnectScreen.connect(this, client, serverAddress, serverInfo, false, null);
         } catch (Exception exception) {
             AiCompanionClient.addChatMessage(Text.literal("[AI Bot] 连接失败：" + exception.getMessage()));
         }
