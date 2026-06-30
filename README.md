@@ -28,6 +28,8 @@ gradle build
 
 ## 发布
 
-- 当前版本：`v0.1.1`
+- 当前版本：`v0.3.1`
 - 发布说明：见 `RELEASE_NOTES_v0.1.0.md`
 - 更新日志：见 `CHANGELOG.md`
+
+
