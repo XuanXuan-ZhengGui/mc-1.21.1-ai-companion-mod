@@ -25,6 +25,8 @@ public final class AiCompanionConfig {
     private static String modelName = "";
     private static boolean chatMode = true;
     private static boolean joinedGame = false;
+    private static boolean aiBotMode = false;
+    private static String targetServerIp = "";
 
     private AiCompanionConfig() {
     }
@@ -42,6 +44,8 @@ public final class AiCompanionConfig {
             modelName = properties.getProperty("modelName", "");
             chatMode = Boolean.parseBoolean(properties.getProperty("chatMode", "true"));
             joinedGame = Boolean.parseBoolean(properties.getProperty("joinedGame", "false"));
+            aiBotMode = Boolean.parseBoolean(properties.getProperty("aiBotMode", "false"));
+            targetServerIp = properties.getProperty("targetServerIp", "");
         } catch (IOException | IllegalArgumentException ignored) {
             providerMode = ProviderMode.CLOUD;
         }
@@ -54,6 +58,8 @@ public final class AiCompanionConfig {
         properties.setProperty("modelName", modelName);
         properties.setProperty("chatMode", Boolean.toString(chatMode));
         properties.setProperty("joinedGame", Boolean.toString(joinedGame));
+        properties.setProperty("aiBotMode", Boolean.toString(aiBotMode));
+        properties.setProperty("targetServerIp", targetServerIp);
 
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
@@ -102,6 +108,22 @@ public final class AiCompanionConfig {
 
     public static void setJoinedGame(boolean joinedGame) {
         AiCompanionConfig.joinedGame = joinedGame;
+    }
+
+    public static boolean aiBotMode() {
+        return aiBotMode;
+    }
+
+    public static void setAiBotMode(boolean aiBotMode) {
+        AiCompanionConfig.aiBotMode = aiBotMode;
+    }
+
+    public static String targetServerIp() {
+        return targetServerIp;
+    }
+
+    public static void setTargetServerIp(String targetServerIp) {
+        AiCompanionConfig.targetServerIp = targetServerIp == null ? "" : targetServerIp.trim();
     }
 
     public static String localEndpoint() {

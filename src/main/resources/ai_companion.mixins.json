@@ -3,7 +3,8 @@
   "package": "com.xuanxuan.aicompanion.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "GameMenuScreenMixin"
+    "GameMenuScreenMixin",
+    "TitleScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

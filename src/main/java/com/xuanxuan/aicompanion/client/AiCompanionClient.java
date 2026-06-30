@@ -1,6 +1,7 @@
 package com.xuanxuan.aicompanion.client;
 
 import com.xuanxuan.aicompanion.client.ai.AiRouter;
+import com.xuanxuan.aicompanion.client.bot.AiBotController;
 import com.xuanxuan.aicompanion.client.config.AiCompanionConfig;
 import com.xuanxuan.aicompanion.client.entity.CompanionEntityManager;
 import com.xuanxuan.aicompanion.client.gui.LoadedMapScreen;
@@ -27,6 +28,7 @@ public final class AiCompanionClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         AiCompanionConfig.load();
+        AiBotController.init();
 
         openMapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.ai_companion.open_map",
