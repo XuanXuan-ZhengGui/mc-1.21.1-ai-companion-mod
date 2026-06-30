@@ -142,7 +142,10 @@ public final class AiBotController {
 
     private static boolean isFood(ItemStack stack) {
         try {
-            return stack.getItem().getFoodComponent() != null;
+            java.lang.reflect.Method m = stack.getClass().getMethod("getUseAction");
+            Object action = m.invoke(stack);
+            String name = action.toString();
+            return name.equals("EAT") || name.equals("DRINK");
         } catch (Exception e) {
             return false;
         }
