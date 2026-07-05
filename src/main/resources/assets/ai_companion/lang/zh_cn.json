@@ -8,5 +8,7 @@
   "button.ai_companion.local": "本地",
   "button.ai_companion.add_api": "添加API",
   "button.ai_companion.chat": "聊天",
-  "button.ai_companion.join_game": "加入游戏"
+  "button.ai_companion.join_game": "加入游戏",
+  "button.ai_companion.mindcraft": "Mindcraft Bot",
+  "screen.ai_companion.mindcraft_config": "Mindcraft Bot 配置"
 }

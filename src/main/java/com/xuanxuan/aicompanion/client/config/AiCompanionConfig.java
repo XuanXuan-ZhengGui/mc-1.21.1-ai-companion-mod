@@ -27,18 +27,21 @@ public final class AiCompanionConfig {
     private static boolean joinedGame = false;
     private static boolean aiBotMode = false;
     private static String targetServerIp = "";
+    private static String apiKey = "";
+    private static String botName = "Andy";
+    private static String mindcraftPath = "";
+    private static boolean mindcraftRunning = false;
+    private static String mindserverPort = "8080";
+    private static String apiProvider = "openai";
+    private static String embeddingModel = "";
 
-    private AiCompanionConfig() {
-    }
+    private AiCompanionConfig() {}
 
     public static void load() {
-        if (!Files.exists(CONFIG_PATH)) {
-            return;
-        }
-
+        if (!Files.exists(CONFIG_PATH)) return;
         Properties properties = new Properties();
-        try (InputStream inputStream = Files.newInputStream(CONFIG_PATH)) {
-            properties.load(inputStream);
+        try (InputStream in = Files.newInputStream(CONFIG_PATH)) {
+            properties.load(in);
             providerMode = ProviderMode.valueOf(properties.getProperty("providerMode", ProviderMode.CLOUD.name()));
             cloudApi = properties.getProperty("cloudApi", "");
             modelName = properties.getProperty("modelName", "");
@@ -46,85 +49,62 @@ public final class AiCompanionConfig {
             joinedGame = Boolean.parseBoolean(properties.getProperty("joinedGame", "false"));
             aiBotMode = Boolean.parseBoolean(properties.getProperty("aiBotMode", "false"));
             targetServerIp = properties.getProperty("targetServerIp", "");
+            apiKey = properties.getProperty("apiKey", "");
+            botName = properties.getProperty("botName", "Andy");
+            mindcraftPath = properties.getProperty("mindcraftPath", "");
+            mindserverPort = properties.getProperty("mindserverPort", "8080");
+            apiProvider = properties.getProperty("apiProvider", "openai");
+            embeddingModel = properties.getProperty("embeddingModel", "");
         } catch (IOException | IllegalArgumentException ignored) {
             providerMode = ProviderMode.CLOUD;
         }
     }
 
     public static void save() {
-        Properties properties = new Properties();
-        properties.setProperty("providerMode", providerMode.name());
-        properties.setProperty("cloudApi", cloudApi);
-        properties.setProperty("modelName", modelName);
-        properties.setProperty("chatMode", Boolean.toString(chatMode));
-        properties.setProperty("joinedGame", Boolean.toString(joinedGame));
-        properties.setProperty("aiBotMode", Boolean.toString(aiBotMode));
-        properties.setProperty("targetServerIp", targetServerIp);
-
+        Properties p = new Properties();
+        p.setProperty("providerMode", providerMode.name());
+        p.setProperty("cloudApi", cloudApi);
+        p.setProperty("modelName", modelName);
+        p.setProperty("chatMode", Boolean.toString(chatMode));
+        p.setProperty("joinedGame", Boolean.toString(joinedGame));
+        p.setProperty("aiBotMode", Boolean.toString(aiBotMode));
+        p.setProperty("targetServerIp", targetServerIp);
+        p.setProperty("apiKey", apiKey);
+        p.setProperty("botName", botName);
+        p.setProperty("mindcraftPath", mindcraftPath);
+        p.setProperty("mindserverPort", mindserverPort);
+        p.setProperty("apiProvider", apiProvider);
+        p.setProperty("embeddingModel", embeddingModel);
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
-            try (OutputStream outputStream = Files.newOutputStream(CONFIG_PATH)) {
-                properties.store(outputStream, "AI Companion configuration");
+            try (OutputStream out = Files.newOutputStream(CONFIG_PATH)) {
+                p.store(out, "AI Companion configuration");
             }
-        } catch (IOException ignored) {
-        }
+        } catch (IOException ignored) {}
     }
 
-    public static ProviderMode providerMode() {
-        return providerMode;
-    }
+    // ===== existing getters/setters =====
 
-    public static void setProviderMode(ProviderMode providerMode) {
-        AiCompanionConfig.providerMode = providerMode;
-    }
+    public static ProviderMode providerMode() { return providerMode; }
+    public static void setProviderMode(ProviderMode v) { providerMode = v; }
 
-    public static String cloudApi() {
-        return cloudApi;
-    }
+    public static String cloudApi() { return cloudApi; }
+    public static void setCloudApi(String v) { cloudApi = v == null ? "" : v.trim(); }
 
-    public static void setCloudApi(String cloudApi) {
-        AiCompanionConfig.cloudApi = cloudApi == null ? "" : cloudApi.trim();
-    }
+    public static String modelName() { return modelName; }
+    public static void setModelName(String v) { modelName = v == null ? "" : v.trim(); }
 
-    public static String modelName() {
-        return modelName;
-    }
+    public static boolean chatMode() { return chatMode; }
+    public static void setChatMode(boolean v) { chatMode = v; }
 
-    public static void setModelName(String modelName) {
-        AiCompanionConfig.modelName = modelName == null ? "" : modelName.trim();
-    }
+    public static boolean joinedGame() { return joinedGame; }
+    public static void setJoinedGame(boolean v) { joinedGame = v; }
 
-    public static boolean chatMode() {
-        return chatMode;
-    }
+    public static boolean aiBotMode() { return aiBotMode; }
+    public static void setAiBotMode(boolean v) { aiBotMode = v; }
 
-    public static void setChatMode(boolean chatMode) {
-        AiCompanionConfig.chatMode = chatMode;
-    }
-
-    public static boolean joinedGame() {
-        return joinedGame;
-    }
-
-    public static void setJoinedGame(boolean joinedGame) {
-        AiCompanionConfig.joinedGame = joinedGame;
-    }
-
-    public static boolean aiBotMode() {
-        return aiBotMode;
-    }
-
-    public static void setAiBotMode(boolean aiBotMode) {
-        AiCompanionConfig.aiBotMode = aiBotMode;
-    }
-
-    public static String targetServerIp() {
-        return targetServerIp;
-    }
-
-    public static void setTargetServerIp(String targetServerIp) {
-        AiCompanionConfig.targetServerIp = targetServerIp == null ? "" : targetServerIp.trim();
-    }
+    public static String targetServerIp() { return targetServerIp; }
+    public static void setTargetServerIp(String v) { targetServerIp = v == null ? "" : v.trim(); }
 
     public static String localEndpoint() {
         return providerMode == ProviderMode.LOCAL_LLAMA_CPP
@@ -134,9 +114,32 @@ public final class AiCompanionConfig {
 
     public static String providerDisplayName() {
         return switch (providerMode) {
-            case CLOUD -> "云端";
-            case LOCAL_OLLAMA -> "本地 ollama";
-            case LOCAL_LLAMA_CPP -> "本地 llama.cpp";
+            case CLOUD -> "\u4e91\u7aef";
+            case LOCAL_OLLAMA -> "\u672c\u5730 ollama";
+            case LOCAL_LLAMA_CPP -> "\u672c\u5730 llama.cpp";
         };
     }
+
+    // ===== new mindcraft getters/setters =====
+
+    public static String apiKey() { return apiKey; }
+    public static void setApiKey(String v) { apiKey = v == null ? "" : v.trim(); }
+
+    public static String botName() { return botName; }
+    public static void setBotName(String v) { botName = v == null ? "Andy" : v.trim(); }
+
+    public static String mindcraftPath() { return mindcraftPath; }
+    public static void setMindcraftPath(String v) { mindcraftPath = v == null ? "" : v.trim(); }
+
+    public static boolean mindcraftRunning() { return mindcraftRunning; }
+    public static void setMindcraftRunning(boolean v) { mindcraftRunning = v; }
+
+    public static String mindserverPort() { return mindserverPort; }
+    public static void setMindserverPort(String v) { mindserverPort = v == null ? "8080" : v.trim(); }
+
+    public static String apiProvider() { return apiProvider; }
+    public static void setApiProvider(String v) { apiProvider = v == null ? "openai" : v.trim(); }
+
+    public static String embeddingModel() { return embeddingModel; }
+    public static void setEmbeddingModel(String v) { embeddingModel = v == null ? "" : v.trim(); }
 }

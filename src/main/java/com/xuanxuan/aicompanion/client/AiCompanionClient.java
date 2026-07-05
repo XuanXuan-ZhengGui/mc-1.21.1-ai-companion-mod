@@ -1,8 +1,9 @@
-package com.xuanxuan.aicompanion.client;
+﻿package com.xuanxuan.aicompanion.client;
 
 import com.xuanxuan.aicompanion.client.ai.AiRouter;
 import com.xuanxuan.aicompanion.client.bot.AiBotController;
 import com.xuanxuan.aicompanion.client.config.AiCompanionConfig;
+import com.xuanxuan.aicompanion.client.mindcraft.MindcraftProcessManager;
 import com.xuanxuan.aicompanion.client.entity.CompanionEntityManager;
 import com.xuanxuan.aicompanion.client.gui.LoadedMapScreen;
 import net.fabricmc.api.ClientModInitializer;
@@ -29,6 +30,8 @@ public final class AiCompanionClient implements ClientModInitializer {
     public void onInitializeClient() {
         AiCompanionConfig.load();
         AiBotController.init();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(MindcraftProcessManager::stopMindcraft, "Mindcraft-Shutdown"));
 
         openMapKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.ai_companion.open_map",

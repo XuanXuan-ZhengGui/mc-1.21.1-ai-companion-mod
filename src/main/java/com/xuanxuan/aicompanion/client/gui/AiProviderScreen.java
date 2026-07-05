@@ -26,9 +26,13 @@ public final class AiProviderScreen extends Screen {
                 client.setScreen(new LocalProviderScreen(this))
         ).dimensions(centerX + 5, startY, 100, 20).build());
 
+        addDrawableChild(ButtonWidget.builder(Text.literal("Mindcraft Bot"), button ->
+                client.setScreen(new MindcraftConfigScreen(this))
+        ).dimensions(centerX - 105, startY + 26, 210, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("返回"), button ->
                 client.setScreen(parent)
-        ).dimensions(centerX - 50, startY + 36, 100, 20).build());
+        ).dimensions(centerX - 50, startY + 62, 100, 20).build());
     }
 
     @Override

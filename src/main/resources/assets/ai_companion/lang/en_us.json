@@ -8,5 +8,7 @@
   "button.ai_companion.local": "Local",
   "button.ai_companion.add_api": "Add API",
   "button.ai_companion.chat": "Chat",
-  "button.ai_companion.join_game": "Join Game"
+  "button.ai_companion.join_game": "Join Game",
+  "button.ai_companion.mindcraft": "Mindcraft Bot",
+  "screen.ai_companion.mindcraft_config": "Mindcraft Bot Config"
 }
