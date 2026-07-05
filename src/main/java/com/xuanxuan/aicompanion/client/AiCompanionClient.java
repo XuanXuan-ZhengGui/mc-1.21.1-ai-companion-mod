@@ -1,4 +1,4 @@
-﻿package com.xuanxuan.aicompanion.client;
+package com.xuanxuan.aicompanion.client;
 
 import com.xuanxuan.aicompanion.client.ai.AiRouter;
 import com.xuanxuan.aicompanion.client.bot.AiBotController;
