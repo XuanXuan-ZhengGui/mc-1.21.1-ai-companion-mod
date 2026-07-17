@@ -19,6 +19,10 @@ import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.concurrent.CompletableFuture;
 
 public final class AiCompanionClient implements ClientModInitializer {
@@ -81,7 +85,7 @@ public final class AiCompanionClient implements ClientModInitializer {
 
                 // If AI Bot mode is enabled, try to start Mindcraft and pass host/port so the external bot can join the LAN server
                 if (AiCompanionConfig.aiBotMode()) {
-                    String host = "127.0.0.1";
+                    String host = detectLanAddress();
                     int port = -1;
 
                     try {
@@ -126,9 +130,6 @@ public final class AiCompanionClient implements ClientModInitializer {
                         }
                     }
 
-                    // Host may need to be the LAN-accessible address; default to 127.0.0.1 for local connections
-                    // (Users can override via mindcraftPath/settings or GUI in a future change)
-
                     MindcraftProcessManager.startMindcraft(host, port);
                 }
             }
@@ -169,5 +170,31 @@ public final class AiCompanionClient implements ClientModInitializer {
         if (client.inGameHud != null) {
             client.inGameHud.getChatHud().addMessage(text);
         }
+    }
+
+    private static String detectLanAddress() {
+        try {
+            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+            while (ifaces.hasMoreElements()) {
+                NetworkInterface iface = ifaces.nextElement();
+                try {
+                    if (iface.isLoopback() || !iface.isUp() || iface.isVirtual()) continue;
+                } catch (Exception ignored) {
+                }
+                Enumeration<InetAddress> addrs = iface.getInetAddresses();
+                while (addrs.hasMoreElements()) {
+                    InetAddress addr = addrs.nextElement();
+                    if (addr.isLoopbackAddress()) continue;
+                    if (addr instanceof Inet4Address) {
+                        String ip = addr.getHostAddress();
+                        if (!ip.startsWith("169.") && !ip.equals("0.0.0.0")) {
+                            return ip;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "127.0.0.1";
     }
 }
