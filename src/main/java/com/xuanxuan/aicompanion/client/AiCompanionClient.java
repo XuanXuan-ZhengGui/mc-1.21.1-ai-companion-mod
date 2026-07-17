@@ -17,6 +17,8 @@ import net.minecraft.text.Text;
 import net.minecraft.world.GameMode;
 import org.lwjgl.glfw.GLFW;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
 public final class AiCompanionClient implements ClientModInitializer {
@@ -76,6 +78,59 @@ public final class AiCompanionClient implements ClientModInitializer {
             if (success) {
                 lanOpened = true;
                 addChatMessage(Text.literal("[系统] 局域网世界已开启，其他玩家可以搜索并加入！"));
+
+                // If AI Bot mode is enabled, try to start Mindcraft and pass host/port so the external bot can join the LAN server
+                if (AiCompanionConfig.aiBotMode()) {
+                    String host = "127.0.0.1";
+                    int port = -1;
+
+                    try {
+                        Object integratedServer = client.getServer();
+                        if (integratedServer != null) {
+                            // Try common getter names first
+                            try {
+                                Method m = integratedServer.getClass().getMethod("getPort");
+                                Object p = m.invoke(integratedServer);
+                                if (p instanceof Integer) port = (Integer) p;
+                            } catch (NoSuchMethodException ignored) {
+                                try {
+                                    Method m2 = integratedServer.getClass().getMethod("getServerPort");
+                                    Object p2 = m2.invoke(integratedServer);
+                                    if (p2 instanceof Integer) port = (Integer) p2;
+                                } catch (Exception ignored2) {
+                                    // fallback to reflection field
+                                }
+                            } catch (Exception ignored) {
+                                // ignore
+                            }
+
+                            if (port < 0) {
+                                try {
+                                    Field f = integratedServer.getClass().getDeclaredField("port");
+                                    f.setAccessible(true);
+                                    Object v = f.get(integratedServer);
+                                    if (v instanceof Integer) port = (Integer) v;
+                                } catch (Exception ignored) {
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+
+                    // fallback to configured mindserverPort or -1
+                    if (port < 0) {
+                        try {
+                            port = Integer.parseInt(AiCompanionConfig.mindserverPort());
+                        } catch (Exception ignored) {
+                            port = -1;
+                        }
+                    }
+
+                    // Host may need to be the LAN-accessible address; default to 127.0.0.1 for local connections
+                    // (Users can override via mindcraftPath/settings or GUI in a future change)
+
+                    MindcraftProcessManager.startMindcraft(host, port);
+                }
             }
         } catch (Exception exception) {
             addChatMessage(Text.literal("[系统] 开启局域网失败：" + exception.getMessage()));
