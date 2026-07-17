@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import com.xuanxuan.aicompanion.client.AiCompanionClient;
 import com.xuanxuan.aicompanion.client.ai.AiRouter;
 import com.xuanxuan.aicompanion.client.config.AiCompanionConfig;
+import com.xuanxuan.aicompanion.client.mindcraft.MindcraftProcessManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
@@ -133,6 +134,17 @@ public final class CompanionEntityManager {
     private static void spawn(MinecraftClient client) {
         try {
             if (client.world == null || client.player == null) return;
+
+            // If AI Bot mode is enabled, use Mindcraft (external bot) to join the server instead of creating a client-only entity
+            if (AiCompanionConfig.aiBotMode()) {
+                if (!MindcraftProcessManager.isRunning()) {
+                    MindcraftProcessManager.startMindcraft();
+                    AiCompanionClient.addChatMessage(Text.literal("[AI Companion] 已启动 Mindcraft Bot，等待其加入世界..."));
+                } else {
+                    AiCompanionClient.addChatMessage(Text.literal("[AI Companion] Mindcraft Bot 已在运行"));
+                }
+                return;
+            }
 
             GameProfile profile = new GameProfile(skinUuid, COMPANION_NAME);
             companion = new OtherClientPlayerEntity(client.world, profile);
