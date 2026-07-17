@@ -52,6 +52,7 @@ public final class AiCompanionClient implements ClientModInitializer {
             }
             CompanionEntityManager.tick(client);
             tryOpenLan(client);
+            tryStartMindcraftForCurrentServer(client);
         });
 
         ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
@@ -136,6 +137,157 @@ public final class AiCompanionClient implements ClientModInitializer {
         } catch (Exception exception) {
             addChatMessage(Text.literal("[系统] 开启局域网失败：" + exception.getMessage()));
         }
+    }
+
+    // Try to start Mindcraft to join the server the player is currently in (supports targetServerIp, integrated LAN, or remote server)
+    private static void tryStartMindcraftForCurrentServer(MinecraftClient client) {
+        if (!AiCompanionConfig.aiBotMode()) return;
+        if (MindcraftProcessManager.isRunning()) return;
+        if (!AiCompanionConfig.joinedGame()) return;
+
+        // 1) If user specified a target server (supports domain/IP or host:port), use that
+        String target = AiCompanionConfig.targetServerIp();
+        if (target != null && !target.isBlank()) {
+            String host = target;
+            int port = -1;
+            if (target.contains(":")) {
+                String[] parts = target.split(":", 2);
+                host = parts[0];
+                try { port = Integer.parseInt(parts[1]); } catch (Exception ignored) { port = -1; }
+            } else {
+                try { port = Integer.parseInt(AiCompanionConfig.mindserverPort()); } catch (Exception ignored) { port = -1; }
+            }
+            MindcraftProcessManager.startMindcraft(host, port);
+            return;
+        }
+
+        // 2) If we're running an integrated server (singleplayer), use LAN-detect host + server port
+        try {
+            if (client.getServer() != null) {
+                String host = detectLanAddress();
+                int port = -1;
+
+                try {
+                    Object integratedServer = client.getServer();
+                    if (integratedServer != null) {
+                        try {
+                            Method m = integratedServer.getClass().getMethod("getPort");
+                            Object p = m.invoke(integratedServer);
+                            if (p instanceof Integer) port = (Integer) p;
+                        } catch (NoSuchMethodException ignored) {
+                            try {
+                                Method m2 = integratedServer.getClass().getMethod("getServerPort");
+                                Object p2 = m2.invoke(integratedServer);
+                                if (p2 instanceof Integer) port = (Integer) p2;
+                            } catch (Exception ignored2) {
+                            }
+                        } catch (Exception ignored) {}
+
+                        if (port < 0) {
+                            try {
+                                Field f = integratedServer.getClass().getDeclaredField("port");
+                                f.setAccessible(true);
+                                Object v = f.get(integratedServer);
+                                if (v instanceof Integer) port = (Integer) v;
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                if (port < 0) {
+                    try { port = Integer.parseInt(AiCompanionConfig.mindserverPort()); } catch (Exception ignored) { port = -1; }
+                }
+
+                MindcraftProcessManager.startMindcraft(host, port);
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 3) Try to detect current remote server address (multiplayer) via various reflection points
+        try {
+            // Try client.getCurrentServerEntry().address or similar
+            try {
+                Method getEntry = client.getClass().getMethod("getCurrentServerEntry");
+                Object entry = getEntry.invoke(client);
+                if (entry != null) {
+                    String address = null;
+                    try {
+                        Method addrM = entry.getClass().getMethod("address");
+                        Object addr = addrM.invoke(entry);
+                        if (addr instanceof String) address = (String) addr;
+                    } catch (NoSuchMethodException ignored) {
+                        try {
+                            Method addrM2 = entry.getClass().getMethod("getAddress");
+                            Object addr2 = addrM2.invoke(entry);
+                            if (addr2 instanceof String) address = (String) addr2;
+                        } catch (Exception ignored2) {}
+                    } catch (Exception ignored) {}
+
+                    if (address == null) {
+                        try {
+                            Field f = entry.getClass().getDeclaredField("address");
+                            f.setAccessible(true);
+                            Object v = f.get(entry);
+                            if (v instanceof String) address = (String) v;
+                        } catch (Exception ignored) {}
+                    }
+
+                    if (address != null && !address.isBlank()) {
+                        String host = address;
+                        int port = -1;
+                        if (address.contains(":")) {
+                            String[] parts = address.split(":", 2);
+                            host = parts[0];
+                            try { port = Integer.parseInt(parts[1]); } catch (Exception ignored) { port = -1; }
+                        } else {
+                            try { port = Integer.parseInt(AiCompanionConfig.mindserverPort()); } catch (Exception ignored) { port = -1; }
+                        }
+                        MindcraftProcessManager.startMindcraft(host, port);
+                        return;
+                    }
+                }
+            } catch (NoSuchMethodException ignored) {
+                // continue to next approach
+            }
+        } catch (Exception ignored) {}
+
+        // 4) As a last resort, try to extract remote address from network handler
+        try {
+            try {
+                Method getNetworkHandler = client.getClass().getMethod("getNetworkHandler");
+                Object nh = getNetworkHandler.invoke(client);
+                if (nh != null) {
+                    try {
+                        Method getConnection = nh.getClass().getMethod("getConnection");
+                        Object conn = getConnection.invoke(nh);
+                        if (conn != null) {
+                            try {
+                                Method getAddress = conn.getClass().getMethod("getAddress");
+                                Object addr = getAddress.invoke(conn);
+                                String addrStr = addr != null ? addr.toString() : null;
+                                if (addrStr != null && !addrStr.isBlank()) {
+                                    // addrStr might be like /127.0.0.1:port or hostname/127.0.0.1:port
+                                    String cleaned = addrStr;
+                                    if (cleaned.startsWith("/")) cleaned = cleaned.substring(1);
+                                    if (cleaned.contains("/")) cleaned = cleaned.substring(cleaned.lastIndexOf('/') + 1);
+                                    if (cleaned.contains(":")) {
+                                        String[] parts = cleaned.split(":" , 2);
+                                        String host = parts[0];
+                                        int port = -1;
+                                        try { port = Integer.parseInt(parts[1]); } catch (Exception ignored) { port = -1; }
+                                        MindcraftProcessManager.startMindcraft(host, port);
+                                        return;
+                                    }
+                                }
+                            } catch (NoSuchMethodException ignored) {}
+                        }
+                    } catch (NoSuchMethodException ignored) {}
+                }
+            } catch (NoSuchMethodException ignored) {}
+        } catch (Exception ignored) {}
+
+        // If nothing detected, do nothing — user can set targetServerIp in config (supports domain/public IP)
     }
 
     private static boolean shouldHandleAiMention(String message) {
